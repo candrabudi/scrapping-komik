@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ComicController;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::get('/comic', [ComicController::class, 'scrappComicData']);
+Route::get('/image', [ComicController::class, 'getAllImageSrc']);
 Route::get('/', function () {
     return view('welcome');
 });
