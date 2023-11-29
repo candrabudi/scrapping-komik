@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Symfony\Component\DomCrawler\Crawler;
+use Illuminate\Support\Facades\File;
 class ComicController extends Controller
 {
     public function scrappComicData(Request $request)
@@ -50,6 +51,26 @@ class ComicController extends Controller
             });
 
             $result['content_paragraphs'] = $contentParagraphs;
+
+            // Mengambil data gambar dari class .thumb
+            $images = $crawler->filter('.thumb img')->each(function ($node) {
+                $imageUrl = $node->attr('src');
+            
+                // Mendapatkan nama file dari URL gambar
+                $fileName = basename(parse_url($imageUrl, PHP_URL_PATH));
+            
+                // Mendapatkan konten gambar
+                $imageContent = file_get_contents($imageUrl);
+            
+                // Menyimpan gambar ke dalam direktori publik Laravel (public/images)
+                $savePath = public_path('images/' . $fileName);
+                File::put($savePath, $imageContent);
+            
+                // Mengembalikan path baru gambar yang sudah disimpan
+                return asset('images/' . $fileName);
+            });
+
+            $result['images'] = $images;
 
             return response()->json([
                 $result
