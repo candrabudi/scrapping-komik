@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ComicController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,7 +17,16 @@ use App\Http\Controllers\ComicController;
 */
 
 Route::get('/comic', [ComicController::class, 'scrappComicData']);
-Route::get('/image', [ComicController::class, 'getAllImageSrc']);
+Route::get('/image', [ComicController::class, 'crawlImageChapter']);
+Route::get('/comic/process', [ComicController::class, 'comicProcess']);
+Route::get('/comic/chapter/process', [ComicController::class, 'comicChapterProcess']);
+Route::post('/login/process', [AuthController::class, 'loginProcess'])->name('login.process');
 Route::get('/', function () {
     return view('welcome');
+});
+
+Auth::routes();
+
+Route::group(['prefix' => 'sea'], function($router) {
+    $router->get('/dashboard', [DashboardController::class, 'index'])->name('sea.dashboard');
 });
