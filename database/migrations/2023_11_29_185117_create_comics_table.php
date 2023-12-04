@@ -13,13 +13,21 @@ return new class extends Migration
     {
         Schema::create('comics', function (Blueprint $table) {
             $table->id();
+            $table->integer('user_id');
             $table->string('title');
-            $table->string('alternative');
+            $table->text('alternative');
+            $table->string('slug');
             $table->enum('status', ['ongoing', 'completed', 'hiatus']);
-            $table->enum('type', ['Manga', 'Manhwa', 'Manhua']);
+            $table->enum('type', ['Manga', 'Manhwa', 'Manhua'])->default('Manga');
+            $table->enum('color', ['Yes', 'No'])->default('No');
+            $table->enum('slider', ['Yes', 'No'])->default('No');
             $table->text('description');
+            $table->string('serialization');
             $table->string('author');
             $table->string('artist');
+            $table->date('posted_on');
+            $table->date('updated_on');
+            $table->integer('released');
             $table->double('rating');
             $table->string('thumb');
             $table->timestamps();

@@ -15,8 +15,10 @@ return new class extends Migration
             $table->id();
             $table->integer('comic_id');
             $table->string('chapter_number');
+            $table->string('chapter_slug');
             $table->string('chapter_title');
             $table->text('chapter_content');
+            $table->dateTime('chapter_realease');
             $table->timestamps();
         });
     }

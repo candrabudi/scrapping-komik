@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ComicController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ReaderController;
+use App\Http\Controllers\RobotsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,14 +18,17 @@ use App\Http\Controllers\DashboardController;
 |
 */
 
-Route::get('/comic', [ComicController::class, 'scrappComicData']);
+Route::post('/comic', [ComicController::class, 'scrappComicData']);
 Route::get('/image', [ComicController::class, 'crawlImageChapter']);
 Route::get('/comic/process', [ComicController::class, 'comicProcess']);
 Route::get('/comic/chapter/process', [ComicController::class, 'comicChapterProcess']);
 Route::post('/login/process', [AuthController::class, 'loginProcess'])->name('login.process');
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [ReaderController::class, 'index'])->name('reader');
+Route::get('/manhwa/{slug}', [ReaderController::class, 'manhwaDetail'])->name('reader.manhwa.detail');
+Route::get('/chapter/{slug}', [ReaderController::class, 'readChapter'])->name('reader.chapter');
+Route::get('/komik/{page}', [ReaderController::class, 'pageComic'])->name('reader.comic.page');
+
+Route::get('/robots.txt', [RobotsController::class, 'generate']);
 
 Auth::routes();
 

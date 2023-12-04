@@ -11,9 +11,14 @@ use App\Models\Comic;
 use App\Models\ComicGenre;
 use App\Models\ComicChapter;
 use App\Models\ComicChapterLink;
+use GuzzleHttp\Client;
+use Carbon\Carbon;
 use DB;
 use DateTime; 
-use GuzzleHttp\Client;
+use DOMDocument;
+use Str;
+use Auth;
+use Illuminate\Support\Facades\Lang;
 class ComicController extends Controller
 {
     public function index()
@@ -36,10 +41,11 @@ class ComicController extends Controller
                     ], 422);
             }
 
-            $comic = $this->crawlComic($url);
+            $comic = $this->crawlComic($request->url);
             $comicChapter = $this->crawlComicChapter($url);
-
-            $comicTitle = trim(str_replace('/n', ' ', $comic['data']['title']));
+            // return response()
+            //     ->json($comic);
+            $comicTitle = $comic['title'];
             $checkComic = Comic::where('title', $comicTitle)
                 ->select('id')
                 ->first();
@@ -54,19 +60,52 @@ class ComicController extends Controller
             }    
 
             $storeComic = new Comic();
-            $storeComic->title = str_replace(["Komik", "\n"], "", $comicTitle);
-            $storeComic->alternative = $comic['data']['judul_alternatif'];
-            $storeComic->status = $comic['data']['status'] == 'Tamat' ? 'completed' : 'ongoing';
-            $storeComic->author = $comic['data']['pengarang'];
-            $storeComic->artist = $comic['data']['ilustrator'];
-            $storeComic->type = $comic['data']['jenis_komik'];
-            $storeComic->rating = $comic['data']['rating'];
-            $storeComic->description = $comic['data']['description'];
-            $storeComic->thumb = $comic['data']['images'][0];
+            $storeComic->user_id = 1;
+            $storeComic->title = $comicTitle;
+            $storeComic->slug = $this->createSlug($comicTitle);
+            $storeComic->alternative = $comic['seriestualt'];
+            $storeComic->status = $comic['comic_detail']['status'] == 'Ongoing' ? 'Ongoing' : 'Completed';
+            $storeComic->author = $comic['comic_detail']['author'];
+            
+            if(isset($comic['comic_detail']['serialization'])){
+                $storeComic->serialization = $comic['comic_detail']['serialization'];
+            }else{
+                $storeComic->serialization = '-';
+            }
+            if(isset($comic['comic_detail']['artist'])){
+                $storeComic->artist = $comic['comic_detail']['artist'];
+            }else{
+                $storeComic->artist = '-';
+            }
+            $storeComic->type = $comic['comic_detail']['type'];
+            $storeComic->rating = $comic['rating'];
+            $storeComic->description = $comic['description'];
+            $storeComic->color = ($comic['comic_detail']['type'] == 'Manga') ? 'No' : 'Yes';
+            $storeComic->posted_on = Carbon::createFromFormat('F j, Y', $this->formatDate($comic['comic_detail']['posted_on']))->format('Y-m-d');
+            $storeComic->updated_on = Carbon::createFromFormat('F j, Y', $this->formatDate($comic['comic_detail']['updated_on']))->format('Y-m-d');
+            if(isset($comic['comic_detail']['released'])){
+                if($comic['comic_detail']['released'] != '-'){
+                    if(ctype_digit($comic['comic_detail']['released'])){
+                        $storeComic->released = $comic['comic_detail']['released'];
+                    }else{
+                        if (preg_match('/(\d{4})/', $comic['comic_detail']['released'], $matches)) {
+                            $tahun = $matches[0];
+                            $storeComic->released = $tahun;
+                        } else {
+                            $storeComic->released = 2023;
+                        }
+                    }
+                }else{
+                    $storeComic->released = 2023;
+                }
+            }else{
+                $storeComic->released = 2023;
+            }
+            $storeComic->thumb = $comic['path_image'];
             $storeComic->save();
             $storeComic->fresh();
 
-            $genres = explode(", ", $comic['data']['genre']);
+            $genres = explode(", ", $comic['genre']);
             foreach($genres as $genre){
                 $checkGenre = Genre::where('name', $genre)
                     ->first();
@@ -75,6 +114,7 @@ class ComicController extends Controller
                 }else{
                     $storeGenre = new Genre();
                     $storeGenre->name = $genre;
+                    $storeGenre->slug = $this->createSlug($genre);
                     $storeGenre->save();
                     $storeGenre->fresh();
 
@@ -88,13 +128,15 @@ class ComicController extends Controller
             }
 
             foreach($comicChapter as $chapter){
-                $storeChapterLink = new ComicChapterLink();
-                $storeChapterLink->comic_id = $storeComic->id;
-                $storeChapterLink->chapter = str_replace('Chapter ', '', $chapter['chapter']);
-                $storeChapterLink->link = $chapter['link_chapter'];
-                $storeChapterLink->chapter_realease = $chapter['specific_date'];
-                $storeChapterLink->status = 0;
-                $storeChapterLink->save();
+                if($chapter['chapter'] !== "Chapter {{number}}"){
+                    $storeChapterLink = new ComicChapterLink();
+                    $storeChapterLink->comic_id = $storeComic->id;
+                    $storeChapterLink->chapter = str_replace('Chapter ', '', $chapter['chapter']);
+                    $storeChapterLink->link = $chapter['chapter_link'];
+                    $storeChapterLink->chapter_realease =  Carbon::parse($chapter['chapter_date'])->addMinutes(2)->format('Y-m-d H:i:s');
+                    $storeChapterLink->status = 0;
+                    $storeChapterLink->save();
+                }
             }
 
             DB::commit();
@@ -141,22 +183,32 @@ class ComicController extends Controller
         }   
 
         $chapters = ComicChapterLink::where('comic_id', $checkComic->id)
-            ->orderBy('chapter', 'ASC')
+            ->where('status', 0)
+            ->orderBy('id', 'DESC')
             ->get();
 
         foreach ($chapters as $chapter) {
             $crawlChapter = $this->crawlImageChapter($chapter->link);
-            $images = [];
-            foreach ($crawlChapter['images'] as $image) {
-                $images[] = str_replace('\\', '', $image);
+            $check = ComicChapter::where('chapter_number', "Chapter ".$chapter->chapter)
+                ->where('chapter_title', str_replace(' Bahasa Indonesia', '',$crawlChapter['title_text']))
+                ->select('id')
+                ->first();
+            if(!$check){
+                $slug = $this->createSlug($comicTitle.' '."Chapter ".$chapter->chapter);
+                $storeChapter = new ComicChapter();
+                $storeChapter->comic_id = $checkComic->id;
+                $storeChapter->chapter_number = "Chapter ".$chapter->chapter;
+                $storeChapter->chapter_slug = $slug;
+                $storeChapter->chapter_title = str_replace(' Bahasa Indonesia', '',$crawlChapter['title_text']);
+                $storeChapter->chapter_realease = $chapter->chapter_realease;
+                $storeChapter->chapter_content = json_encode($crawlChapter['images']);
+                $storeChapter->save();
+
+                ComicChapterLink::where('id', $chapter->id)
+                    ->update([
+                        'status' => 1
+                    ]);
             }
-        
-            $storeChapter = new ComicChapter();
-            $storeChapter->comic_id = $checkComic->id;
-            $storeChapter->chapter_number = "Chapter ".$chapter->chapter;
-            $storeChapter->chapter_title = $crawlChapter['title_text'];
-            $storeChapter->chapter_content = json_encode($images); // Menggunakan json_encode
-            $storeChapter->save();
         }
             
         return response()
@@ -167,6 +219,105 @@ class ComicController extends Controller
             ], 201);
     }
 
+    public function crawlComicKomikindo($url){
+        $response = Http::get($url);
+    
+        if ($response->ok()) {
+            $html = $response->body();
+            $crawler = new Crawler($html);
+
+            $returnData = [];
+
+            $titles = $crawler->filter('.entry-title')->extract(['_text']);
+            $description = $crawler->filter('.entry-content')->extract(['_text']);
+            $seriestualt = $crawler->filter('.seriestualt')->extract(['_text']);
+            $rating = $crawler->filter('.archiveanime-rating i')->extract(['_text']);
+            $dom = new DOMDocument();
+            @$dom->loadHTML($html);
+            $xpath = new \DOMXPath($dom);
+            $elements = $xpath->query('//div[contains(@class, "spe")]/span');
+
+            $result = [];
+
+            foreach ($elements as $element) {
+                $text = $element->nodeValue;
+            
+                // Pisahkan teks menjadi kunci dan nilai menggunakan ':'
+                $split = explode(':', $text, 2);
+            
+                if (count($split) === 2) {
+                    // Gunakan teks sebelum ':' sebagai kunci dan teks setelahnya sebagai nilai
+                    $key = trim($split[0]);
+            
+                    // Ubah teks sebelum ':' menjadi snake_case dan lowercase
+                    $key = strtolower(str_replace(' ', '_', $key));
+            
+                    $value = trim($split[1]);
+            
+                    $result[$key] = $value;
+                }
+            }
+            $comicDetail = [];
+            // return $result;
+            $comicDetail['seriestualt'] = $result['judul_alternatif'];
+            $comicDetail['status'] = $result['status'] == 'Tamat' ? 'Completed' : 'Ongoing';
+            $comicDetail['author'] = $result['pengarang'];
+            $comicDetail['artist'] = $result['ilustrator'];
+            $comicDetail['type'] = $result['jenis_komik'];
+
+            $genres = $xpath->query("//div[contains(@class, 'genre-info ')]/a");
+
+            $genreList = [];
+
+            foreach ($genres as $genre) {
+                $genreList[] = $genre->nodeValue;
+                if(count($genreList) === 4) {
+                    break;
+                }
+            }
+            $combinedGenres = implode(", ", $genreList);
+            $thumbElement = $xpath->query('//div[contains(@class, "thumb")]/img/@src');
+
+            if ($thumbElement->length > 0) {
+                $imageUrl = $thumbElement[0]->nodeValue;
+
+                // Hapus parameter yang tidak diperlukan dari URL gambar
+                $cleanImageUrl = strtok($imageUrl, '?');
+
+                // Ambil nama file dari URL gambar
+                $fileName = basename($cleanImageUrl);
+
+                // Path tujuan penyimpanan di storage Laravel
+                $storagePath = storage_path('app/public/media/' . $fileName);
+
+                // Unduh gambar dan simpan ke storage Laravel
+                $imageContent = file_get_contents($cleanImageUrl);
+                file_put_contents($storagePath, $imageContent);
+
+                // Path file gambar di storage Laravel
+                $storageFilePath = 'media/' . $fileName;
+
+                // Tampilkan path file gambar di storage Laravel
+                $path = $storageFilePath;
+            }else{
+                $path = "";
+            }
+
+            $returnData['title'] = trim(str_replace('Komik', '',$titles[0]));
+            $returnData['description'] = trim(str_replace('\n','',$description[0]));
+            $returnData['seriestualt'] = "-";
+            $returnData['comic_detail'] = $comicDetail;
+            $returnData['genre'] = $combinedGenres;
+            $returnData['rating'] = trim($rating[0]);
+            $returnData['path_image'] = $path;
+
+            return $returnData;
+        }else{
+            return [];
+        }
+        
+    }
+
     public function crawlComic($url){
         $response = Http::get($url);
     
@@ -174,105 +325,164 @@ class ComicController extends Controller
             $html = $response->body();
             $crawler = new Crawler($html);
             $result = [];
-    
-            $crawler->filter('.spe')->each(function ($node) use (&$result) {
-                $spanValues = [];
-    
-                $node->filter('span')->each(function ($spanNode) use (&$spanValues) {
-                    $text = $spanNode->text();
-                    [$key, $value] = array_map('trim', explode(':', $text, 2));
-                    $key = strtolower(str_replace(' ', '_', $key));
-                    $spanValues[$key] = $value;
-                });
-    
-                $result['data'] = $spanValues;
-            });
+
             $titles = $crawler->filter('.entry-title')->extract(['_text']);
-            $result['data']['title'] = $titles[0] ?? '';
-
-            $genres = $crawler->filter('.genre-info a')->extract(['_text']);
-
-            if (!isset($result['data'])) {
-                $result['data'] = [];
+            $description = $crawler->filter('.entry-content')->extract(['_text']);
+            $seriestualt = $crawler->filter('.seriestualt')->extract(['_text']);
+            $rating = $crawler->filter('.num')->extract(['_text']);
+            $dom = new DOMDocument();
+            @$dom->loadHTML($html);
+    
+            $table = $dom->getElementsByTagName('table')->item(0);
+            $tbody = $table->getElementsByTagName('tbody')->item(0);
+            $rows = $tbody->getElementsByTagName('tr');
+    
+            $result = [];
+            $returnData = [];
+            foreach ($rows as $row) {
+                $cells = $row->getElementsByTagName('td');
+                $key = trim($cells->item(0)->nodeValue);
+                $value = trim($cells->item(1)->nodeValue);
+                $key = Str::snake(strtolower($key));
+    
+                $result[$key] = $value;
             }
 
-            $result['data']['genre'] = implode(', ', $genres);
+            $xpath = new \DOMXPath($dom);
+            $genres = $xpath->query("//div[contains(@class, 'seriestugenre')]/a");
 
-            $contentParagraphs = $crawler->filter('.entry-content-single p')->each(function ($node) {
-                return $node->text();
-            });
+            $genreList = [];
 
-            $rating = $crawler->filter('.archiveanime-rating i')->each(function ($node) {
-                return $node->text();
-            });
+            foreach ($genres as $genre) {
+                $genreList[] = $genre->nodeValue;
+                if(count($genreList) === 4) {
+                    break;
+                }
+            }
 
-            $result['data']['rating'] = $rating[0];
-            $result['data']['description'] = $contentParagraphs[0];
-            $images = $crawler->filter('.thumb img')->each(function ($node) {
-                $imageUrl = $node->attr('src');
-                $fileName = basename(parse_url($imageUrl, PHP_URL_PATH));
-                $imageContent = file_get_contents($imageUrl);
-                $savePath = public_path('images/' . $fileName);
-                File::put($savePath, $imageContent);
-                return 'images/' . $fileName;
-            });
+            $combinedGenres = implode(", ", $genreList);
 
-            $result['data']['images'] = $images;
-    
-            return $result;
-        } else {
+            $startPos = strpos($html, 'class="thumb"');
+            if ($startPos !== false) {
+                $startPos = strpos($html, 'src="', $startPos) + 5;
+                $endPos = strpos($html, '"', $startPos);
+
+                if ($endPos !== false) {
+                    $imageUrl = substr($html, $startPos, $endPos - $startPos);
+                    $imageContent = file_get_contents($imageUrl);
+                    $filename = basename($imageUrl);
+                    $path = storage_path('app/public/media/' . $filename);
+                    file_put_contents($path, $imageContent);
+
+                    $storagePrefix = storage_path('app/public/');
+                    $relativePath = str_replace($storagePrefix, '', $path);
+
+                    $path = $relativePath;
+                }else{
+                    $path = "";
+                }
+            }else{
+                $path = "";
+            }
+
+            $returnData['title'] = str_replace(' Bahasa Indonesia', '',$titles[0]);
+            $returnData['description'] = str_replace('\n','',$description[0]);
+            if($seriestualt){
+                $returnData['seriestualt'] = str_replace('\n','',$seriestualt[0]);
+            }else{
+                $returnData['seriestualt'] = "-";
+            }
+            $returnData['comic_detail'] = $result;
+            $returnData['genre'] = $combinedGenres;
+            $returnData['rating'] = $rating[0];
+            $returnData['path_image'] = $path;
+
+            return $returnData;
+        }else{
             return [];
         }
+        
     }
 
     public function crawlComicChapter($url){
-        $response = Http::get($url);
-    
-        if ($response->ok()) {
+        try {
+            $response = Http::get($url);
             $html = $response->body();
+    
             $crawler = new Crawler($html);
-            $result = [];
-    
-            $links = $crawler->filter('.lchx a');
-            $dates = $crawler->filter('.dt');
-    
-            $dates->each(function ($node, $i) use (&$result, $links) {
-                $chapterTitle = $links->eq($i)->text();
-                $linkChapter = $links->eq($i)->attr('href');
-                $dateText = $node->filter('a')->text();
-    
-                $specificDate = null;
-    
-                if (preg_match('/(\d+) bulan yang lalu/', $dateText, $matches)) {
-                    $timeAgo = intval($matches[1]);
-                    $specificDate = new DateTime("-$timeAgo month");
-                } elseif (preg_match('/(\d+) minggu yang lalu/', $dateText, $matches)) {
-                    $timeAgo = intval($matches[1]);
-                    $specificDate = new DateTime("-$timeAgo week");
-                } elseif (preg_match('/(\d+) hari yang lalu/', $dateText, $matches)) {
-                    $timeAgo = intval($matches[1]);
-                    $specificDate = new DateTime("-$timeAgo day");
-                } elseif (preg_match('/(\d+) menit yang lalu/', $dateText, $matches)) {
-                    $timeAgo = intval($matches[1]);
-                    $specificDate = new DateTime("-$timeAgo minute");
-                } elseif (preg_match('/(\d+) tahun yang lalu/', $dateText, $matches)) {
-                    $timeAgo = intval($matches[1]);
-                    $specificDate = new DateTime("-$timeAgo year");
+            Carbon::setLocale('id');
+            Carbon::setUtf8(true);
+            setlocale(LC_TIME, 'id_ID.utf8');
+            // Ambil informasi dari class .chapternum dan .chapterdate beserta nilai dari tag <a>
+            $chapters = $crawler->filter('.eph-num')->each(function (Crawler $node, $i) {
+                $dateString = $node->filter('.chapterdate')->extract(['_text'])[0];
+                $exploded = explode(' ', $dateString);
+                $month = strtolower($exploded[0]);
+            
+                $translatedMonth = Lang::get('months.' . $month);
+                
+                $exploded[0] = ucfirst($translatedMonth);
+                $newDateString = implode(' ', $exploded);
+                if($translatedMonth == "months.{{date}}") {
+                    $translatedMonth = "December";
+                    $exploded[0] = ucfirst($translatedMonth);
+                    $newDateString = implode(' ', [ucfirst($translatedMonth), "4,", 2023]);
                 }
-    
-                $result[] = [
-                    'chapter' => $chapterTitle,
-                    'link_chapter' => $linkChapter,
-                    'original_time' => $dateText,
-                    'specific_date' => $specificDate ? $specificDate->format('Y-m-d H:i:s') : null,
+                // return $newDateString;
+                $date = Carbon::createFromFormat('F j, Y', $newDateString);
+                
+                return [
+                    'chapter' => $node->filter('.chapternum')->extract(['_text'])[0],
+                    'chapter_date' => $date->format('Y-m-d').' '.Carbon::now()->format('H:i:s'),
+                    'chapter_link' => $node->filter('a')->attr('href'),
                 ];
             });
-    
-            return $result;
-        } else {
-            return response()->json([], 500);
+
+            return $chapters;
+        } catch (\Exception $e) {
+            return "Terjadi kesalahan: " . $e->getMessage();
         }
-    } 
+    }
+    
+    public function crawlComicChapterKomikindo($url){
+        try {
+            $response = Http::get($url);
+            $html = $response->body();
+    
+            $crawler = new Crawler($html);
+            Carbon::setLocale('id');
+            Carbon::setUtf8(true);
+            setlocale(LC_TIME, 'id_ID.utf8');
+            // Ambil informasi dari class .chapternum dan .chapterdate beserta nilai dari tag <a>
+            $chapters = $crawler->filter('.eph-num')->each(function (Crawler $node, $i) {
+                $dateString = $node->filter('.chapterdate')->extract(['_text'])[0];
+                $exploded = explode(' ', $dateString);
+                $month = strtolower($exploded[0]);
+            
+                $translatedMonth = Lang::get('months.' . $month);
+                
+                $exploded[0] = ucfirst($translatedMonth);
+                $newDateString = implode(' ', $exploded);
+                if($translatedMonth == "months.{{date}}") {
+                    $translatedMonth = "December";
+                    $exploded[0] = ucfirst($translatedMonth);
+                    $newDateString = implode(' ', [ucfirst($translatedMonth), "4,", 2023]);
+                }
+                // return $newDateString;
+                $date = Carbon::createFromFormat('F j, Y', $newDateString);
+                
+                return [
+                    'chapter' => $node->filter('.chapternum')->extract(['_text'])[0],
+                    'chapter_date' => $date->format('Y-m-d').' '.Carbon::now()->format('H:i:s'),
+                    'chapter_link' => $node->filter('a')->attr('href'),
+                ];
+            });
+            
+            return $chapters;
+        } catch (\Exception $e) {
+            return "Terjadi kesalahan: " . $e->getMessage();
+        }
+    }
 
     public function crawlImageChapter($url)
     {
@@ -283,15 +493,12 @@ class ComicController extends Controller
             $crawler = new Crawler($html);
             $result = [];
 
-            $crawler->filter('#chimg-auh img')->each(function ($node) use (&$result) {
+            $crawler->filter('#readerarea img')->each(function ($node) use (&$result) {
                 // Ambil tag HTML dari setiap gambar
-                $imageHTML = $node->outerHtml();
-
-                // Hapus karakter '\'
-                $cleanedHTML = str_replace('\\', '', $imageHTML);
+                $imageHTML = $node->attr('src');
 
                 // Simpan tag HTML yang telah dibersihkan ke dalam array
-                $result[] = $cleanedHTML;
+                $result[] = $imageHTML;
             });
 
             // Menambahkan logika untuk mendapatkan teks dari class entry-title
@@ -306,6 +513,30 @@ class ComicController extends Controller
         return response()->json([
             'error' => 'Gagal mendapatkan HTML'
         ], 500);
+    }
+
+    function createSlug($text) 
+    {
+        // Mengganti spasi dengan tanda "-"
+        $slug = strtolower(str_replace(' ', '-', $text));
+        
+        // Menghapus karakter khusus kecuali huruf dan angka
+        $slug = preg_replace('/[^A-Za-z0-9\-]/', '', $slug);
+        
+        return $slug;
+    }
+
+    function formatDate($date)
+    {
+        $dateString = $date;
+        $exploded = explode(' ', $dateString);
+        $month = strtolower($exploded[0]);
+    
+        $translatedMonth = Lang::get('months.' . $month);
+        
+        $exploded[0] = ucfirst($translatedMonth);
+        $newDateString = implode(' ', $exploded);
+        return $newDateString;
     }
 
 

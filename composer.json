@@ -6,12 +6,15 @@
     "license": "MIT",
     "require": {
         "php": "^8.1",
-        "guzzlehttp/guzzle": "^7.2",
+        "fabpot/goutte": "^4.0",
+        "guzzlehttp/guzzle": "^7.8",
         "ixudra/curl": "^6.22",
         "laravel/framework": "^10.10",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
         "laravel/ui": "^4.2",
+        "nesbot/carbon": "^2.72",
+        "spatie/laravel-sitemap": "^7.0",
         "symfony/css-selector": "^6.3",
         "symfony/dom-crawler": "^6.3"
     },
@@ -29,7 +32,10 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        }
+        },
+        "files": [
+            "app/Helpers/FormatTime.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
