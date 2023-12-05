@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use Illuminate\Database\Eloquent\Relations\HasMany;
 class Comic extends Model
 {
     use HasFactory;
@@ -36,5 +36,9 @@ class Comic extends Model
     {
         return $this->hasMany(comicChapter::class, 'comic_id', 'id')
             ->orderBy('id', 'DESC');
+    }
+    public function comicViews(): HasMany
+    {
+        return $this->hasMany(ComicView::class, 'comic_id', 'id');
     }
 }

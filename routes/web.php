@@ -29,6 +29,7 @@ Route::get('/manhua/{slug}', [ReaderController::class, 'mahuaDetail'])->name('re
 Route::get('/manga/{slug}', [ReaderController::class, 'mangaDetail'])->name('reader.manga.detail');
 Route::get('/chapter/{slug}', [ReaderController::class, 'readChapter'])->name('reader.chapter');
 Route::get('/komik/{page}', [ReaderController::class, 'pageComic'])->name('reader.comic.page');
+Route::get('/genre/{slug}/{page}', [ReaderController::class, 'pageGenre'])->name('reader.genre.page');
 
 Route::get('/robots.txt', [RobotsController::class, 'generate']);
 
