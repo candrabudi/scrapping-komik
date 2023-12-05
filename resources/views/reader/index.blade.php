@@ -1,6 +1,6 @@
 @extends('reader.layouts.app')
 @section('slider')
-@include('reader.home.slider')
+    @include('reader.home.slider')
 @endsection
 @section('content')
     {{-- <div class="hotslid">
@@ -61,39 +61,78 @@
                     <div class="utao styletwo stylegg">
                         <div class="uta">
                             <div class="imgu">
-                                <a rel="382" class="series"
-                                    href="{{ route('reader.manhwa.detail', $comic->slug) }}"
-                                    title="{{ $comic->alternative }}"><img
-                                        data-lazyloaded="1" data-placeholder-resp="214x305"
-                                        src="/storage/{{ $comic->thumb }}"
-                                        data-src="/storage/{{ $comic->thumb }}"
-                                        class="ts-post-image wp-post-image attachment-medium size-medium" loading="lazy"
-                                        title="{{ $comic->alternative }}"
-                                        alt="{{ $comic->alternative }}" width="214"
-                                        height="305" />
-                                    <span class="type {{ $comic->type }}"></span>
-                                </a>
+
+                                @if ($comic->type == 'Manhwa')
+                                    <a rel="382" class="series" href="{{ route('reader.manhwa.detail', $comic->slug) }}"
+                                        title="{{ $comic->alternative }}"><img data-lazyloaded="1"
+                                            data-placeholder-resp="214x305" src="/storage/{{ $comic->thumb }}"
+                                            data-src="/storage/{{ $comic->thumb }}"
+                                            class="ts-post-image wp-post-image attachment-medium size-medium" loading="lazy"
+                                            title="{{ $comic->alternative }}" alt="{{ $comic->alternative }}" width="214"
+                                            height="305" />
+                                        <span class="type {{ $comic->type }}"></span>
+                                    </a>
+                                @elseif($comic->type == 'Manhua')
+                                    <a rel="382" class="series"
+                                        href="{{ route('reader.manhua.detail', $comic->slug) }}"
+                                        title="{{ $comic->alternative }}"><img data-lazyloaded="1"
+                                            data-placeholder-resp="214x305" src="/storage/{{ $comic->thumb }}"
+                                            data-src="/storage/{{ $comic->thumb }}"
+                                            class="ts-post-image wp-post-image attachment-medium size-medium" loading="lazy"
+                                            title="{{ $comic->alternative }}" alt="{{ $comic->alternative }}"
+                                            width="214" height="305" />
+                                        <span class="type {{ $comic->type }}"></span>
+                                    </a>
+                                @else
+                                    <a rel="382" class="series"
+                                        href="{{ route('reader.manga.detail', $comic->slug) }}"
+                                        title="{{ $comic->alternative }}"><img data-lazyloaded="1"
+                                            data-placeholder-resp="214x305" src="/storage/{{ $comic->thumb }}"
+                                            data-src="/storage/{{ $comic->thumb }}"
+                                            class="ts-post-image wp-post-image attachment-medium size-medium" loading="lazy"
+                                            title="{{ $comic->alternative }}" alt="{{ $comic->alternative }}"
+                                            width="214" height="305" />
+                                        <span class="type {{ $comic->type }}"></span>
+                                    </a>
+                                @endif
                             </div>
                             <div class="luf">
-                                <a class="series" href="{{ route('reader.manhwa.detail', $comic->slug) }}" title="{{ $comic->title }}">
-                                    <span>{{ $comic->title }}</span>
-                                </a>
+                                @if ($comic->type == 'Manhwa')
+                                    <a class="series" href="{{ route('reader.manhwa.detail', $comic->slug) }}"
+                                        title="{{ $comic->title }}">
+                                        <span>{{ $comic->title }}</span>
+                                    </a>
+                                @elseif($comic->type == 'Manhua')
+                                    <a class="series" href="{{ route('reader.manhua.detail', $comic->slug) }}"
+                                        title="{{ $comic->title }}">
+                                        <span>{{ $comic->title }}</span>
+                                    </a>
+                                @else
+                                    <a class="series" href="{{ route('reader.manga.detail', $comic->slug) }}"
+                                        title="{{ $comic->title }}">
+                                        <span>{{ $comic->title }}</span>
+                                    </a>
+                                @endif
+
                                 <ul class="{{ $comic->type }}">
                                     @foreach ($comic->comicChapter as $ch)
                                         <li>
-                                            <a href="{{ $ch['chapter_slug'] }}">
-                                                <span class="eggchap">{{ $ch->chapter_number }}</span>
+                                            <a href="{{ route('reader.chapter', $ch['chapter_slug']) }}">
+                                                <span
+                                                    class="eggchap">{{ $ch->chapter_number }}</span>
                                                 <span class="eggtime">{{ formatTime($ch->chapter_realease) }}</span>
                                             </a>
                                         </li>
                                     @endforeach
-                                </ul> <span class="statusind {{ $comic->status }}"><i class="fas fa-circle"></i> {{ $comic->status }}</span>
+                                </ul> <span class="statusind {{ $comic->status }}"><i class="fas fa-circle"></i>
+                                    {{ $comic->status }}</span>
                             </div>
                         </div>
                     </div>
                 @endforeach
                 <div class="hpage">
-                    <a href="{{ route('reader.comic.page', 2) }}" class="r">Next <i class="fa fa-chevron-right" aria-hidden="true"></i></a>
+                    <a href="{{ route('reader.comic.page', 2) }}" class="r">Next <i class="fa fa-chevron-right"
+                            aria-hidden="true"></i></a>
                 </div>
             </div>
         </div>

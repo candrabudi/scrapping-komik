@@ -55,6 +55,24 @@ class ReaderController extends Controller
         return view('reader.detail', compact('comic', 'widthRating'));
     }
 
+    public function manhuaDetail($slug)
+    {
+        $comic = Comic::where('slug', $slug)
+            ->first();
+
+        $widthRating = $this->formatNumber($comic->rating);
+        return view('reader.detail', compact('comic', 'widthRating'));
+    }
+
+    public function mangaDetail($slug)
+    {
+        $comic = Comic::where('slug', $slug)
+            ->first();
+
+        $widthRating = $this->formatNumber($comic->rating);
+        return view('reader.detail', compact('comic', 'widthRating'));
+    }
+
     public function readChapter($slug)
     {
         $chapter = ComicChapter::where('chapter_slug', $slug)
