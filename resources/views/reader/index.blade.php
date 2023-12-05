@@ -136,6 +136,7 @@
                 </div>
             </div>
         </div>
+        @include('reader.home.recomendation')
         {{-- recomendation include --}}
     </div>
 @endsection

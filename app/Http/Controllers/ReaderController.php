@@ -7,6 +7,7 @@ use App\Models\Comic;
 use App\Models\ComicView;
 use App\Models\Genre;
 use App\Models\ComicChapter;
+use App\Models\ComicGenre;
 use Spatie\Sitemap\SitemapGenerator;
 use Spatie\Crawler\Crawler;
 use DB;

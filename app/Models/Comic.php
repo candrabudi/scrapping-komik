@@ -41,4 +41,9 @@ class Comic extends Model
     {
         return $this->hasMany(ComicView::class, 'comic_id', 'id');
     }
+
+    public function genres()
+    {
+        return $this->belongsToMany(Genre::class, 'comic_genres');
+    }
 }

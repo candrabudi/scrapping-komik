@@ -3,7 +3,10 @@ use Carbon\Carbon;
 use App\Models\Comic;
 use App\Models\ComicView;
 use App\Models\ComicChapter;
-
+use App\Models\Genre;
+use App\Models\ComicGenre;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Session;
 function getTopComicsWeek()
 {
     $weekAgo = Carbon::now()->subWeek();
@@ -16,8 +19,9 @@ function getTopComicsWeek()
     ->get();
 
     if ($topComicsWeek->count() < 10) {
+        $take = 12 - count($topComicsWeek);
         $randomComics = Comic::orderBy('rating', 'DESC')
-            ->take(12 - count($topComicsWeek))
+            ->take(10 - count($topComicsWeek) + $take)
             ->get();
 
         $topComicsWeek = $topComicsWeek->merge($randomComics);
@@ -94,4 +98,50 @@ function formatNumber($number)
     }
 
     return $formatted_number;
+}
+
+function getComicRecommendations()
+{
+    // $lastCalledTime = Session::get('last_called_time');
+
+    // if (!$lastCalledTime || now()->diffInMinutes($lastCalledTime) >= 30) {
+        $genreIdsWithComics = ComicGenre::distinct('genre_id')
+            ->join('genres as g', 'g.id', '=', 'comic_genres.genre_id')
+            ->join('comics as c', 'c.id', '=', 'comic_genres.comic_id')
+            ->inRandomOrder()
+            ->take(5)
+            ->pluck('genre_id');
+
+        $recommendations = [];
+        foreach ($genreIdsWithComics as $genreId) {
+            $randomComicIds = ComicGenre::where('genre_id', $genreId)
+                ->inRandomOrder()
+                ->take(5)
+                ->pluck('comic_id');
+
+            $randomComics = Comic::with('comicChapterLast')
+                ->whereIn('id', $randomComicIds)
+                ->get()
+                ->toArray();
+
+            $genre = Genre::where('id', $genreId)
+                ->first();
+
+            if ($randomComics && $genre) {
+                $recommendations[] = [
+                    'genre' => $genre->name,
+                    'slug' => $genre->slug,
+                    'comics' => $randomComics,
+                ];
+            }
+        }
+
+        Session::put('last_called_time', now());
+        Session::put('comic_recommendations', $recommendations); // Simpan rekomendasi ke dalam session
+
+        return $recommendations;
+    // } else {
+    //     // Jika belum mencapai 30 menit sejak pemanggilan terakhir, gunakan hasil sebelumnya dari session
+    //     return Session::get('comic_recommendations', []);
+    // }
 }
