@@ -278,7 +278,7 @@
                                                 </table>
                                                 <div class="seriestugenre">
                                                     @foreach ($comic->comicGenres as $genre)
-                                                        <a href="/genres/{{ $genre->slug }}/"
+                                                        <a href="{{ route('reader.genre.page', ['slug' => $genre->slug, 'page' => 1]) }}"
                                                             rel="genre">{{ $genre->name }}</a>
                                                     @endforeach
                                                 </div>
