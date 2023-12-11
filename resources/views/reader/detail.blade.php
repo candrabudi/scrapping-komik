@@ -2,32 +2,17 @@
 <html lang="en-US">
 
 <head>
-    <script data-no-optimize="1">
-        var litespeed_docref = sessionStorage.getItem("litespeed_docref");
-        litespeed_docref && (Object.defineProperty(document, "referrer", {
-            get: function() {
-                return litespeed_docref
-            }
-        }), sessionStorage.removeItem("litespeed_docref"));
-    </script>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="theme-color" content="#342a78">
-    <meta name="msapplication-navbutton-color" content="#342a78">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="#342a78">
-    <meta name='robots' content='index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' />
-    <title>Seataku - Baca Komik Terlengkap dan Terbaru Hari Ini</title>
-    <meta name="description" content="Baca Komik Terlengkap dan Terbaru Hari Ini" class="yoast-seo-meta-tag" />
-    <link rel="canonical" href="https://seataku.com/" class="yoast-seo-meta-tag" />
-    <link rel="next" href="https://seataku.com/page/2/" class="yoast-seo-meta-tag" />
-    <meta property="og:locale" content="en_US" class="yoast-seo-meta-tag" />
-    <meta property="og:type" content="website" class="yoast-seo-meta-tag" />
-    <meta property="og:title" content="Seataku" class="yoast-seo-meta-tag" />
-    <meta property="og:description" content="Baca Komik Terlengkap dan Terbaru Hari Ini" class="yoast-seo-meta-tag" />
-    <meta property="og:url" content="https://seataku.com/" class="yoast-seo-meta-tag" />
-    <meta property="og:site_name" content="Seataku" class="yoast-seo-meta-tag" />
-    <meta name="twitter:card" content="summary_large_image" class="yoast-seo-meta-tag" />
+    <title>{{ SEOMeta::getTitle() }}</title>
+    <meta name="description" content="{{ SEOMeta::getDescription() }}">
+    <meta name="keywords" content="{{ implode(', ', SEOMeta::getKeywords()) }}">
+    <link rel="canonical" href="https://komiksea.com/" />
+	<meta property="og:locale" content="en_US" />
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content="Komiksea" />
+	<meta property="og:description" content="{{ SEOMeta::getDescription() }}" />
+	<meta property="og:url" content="https://komiksea.lol/" />
+	<meta property="og:site_name" content="Komiksea" />
+	<meta name="twitter:card" content="summary_large_image" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.2.0/css/all.min.css"
         integrity="sha512-6c4nX2tn5KbzeBJo9Ywpa0Gkt+mzCzJBrE1RB6fmpcsoN+b/w/euwIMuQKNyUoU/nToKN3a8SgNOtPrbW12fug=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -282,11 +267,13 @@
                                                             rel="genre">{{ $genre->name }}</a>
                                                     @endforeach
                                                 </div>
+                                               
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            <div class="kln" style="margin-bottom: 10px;"><noscript><img src="https://mangareader.themesia.com/wp-content/uploads/2020/12/rn728.png" alt="sample placement"/></noscript><img class=" ls-is-cached lazyloaded" src="https://mangareader.themesia.com/wp-content/uploads/2020/12/rn728.png" data-src="https://mangareader.themesia.com/wp-content/uploads/2020/12/rn728.png" alt="sample placement"></div>
                             <div class="bixbox bxcl epcheck">
                                 <div class="releases">
                                     <h2>
@@ -314,6 +301,7 @@
                                     </ul>
                                 </div>                                
                             </div>
+                            <div class="kln" style="margin-bottom: 10px;"><noscript><img src="https://mangareader.themesia.com/wp-content/uploads/2020/12/rn728.png" alt="sample placement"/></noscript><img class=" ls-is-cached lazyloaded" src="https://mangareader.themesia.com/wp-content/uploads/2020/12/rn728.png" data-src="https://mangareader.themesia.com/wp-content/uploads/2020/12/rn728.png" alt="sample placement"></div>
                             @include('reader.home.related')
                             <div id="comments" class="bixbox comments-area">
 

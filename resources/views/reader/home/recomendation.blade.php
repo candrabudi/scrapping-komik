@@ -36,8 +36,7 @@
                                         <div class="tt">
                                             {{ $comic['title'] }} </div>
                                         <div class="adds">
-                                            <div class="epxs">{{ $comic['comic_chapter_last']['chapter_number'] }}
-                                            </div>
+                                            <div class="epxs">{{ $comic['comic_chapter_last']['chapter_number'] }}</div>
                                             <div class="rt">
                                                 <div class="rating">
                                                     <div class="rating-prc">

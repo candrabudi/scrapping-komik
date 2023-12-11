@@ -21,6 +21,7 @@ return new class extends Migration
             $table->enum('type', ['Manga', 'Manhwa', 'Manhua'])->default('Manga');
             $table->enum('color', ['Yes', 'No'])->default('No');
             $table->enum('slider', ['Yes', 'No'])->default('No');
+            $table->enum('Hot', ['Yes', 'No'])->default('No');
             $table->text('description');
             $table->string('serialization');
             $table->string('author');
@@ -30,6 +31,7 @@ return new class extends Migration
             $table->integer('released');
             $table->double('rating');
             $table->string('thumb');
+            $table->integer('view_count')->default(0);
             $table->timestamps();
         });
     }

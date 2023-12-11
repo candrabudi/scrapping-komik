@@ -3,7 +3,7 @@
     <div class="postbody">
         <div class="bixbox">
             <div class="releases">
-                <h2>Terakhir Update</h2><a class="vl" href="{{ route('reader.comic.page', 1) }}">Lihat Semua</a>
+                <h2>Terakhir Update Komik</h2><a class="vl" href="{{ route('reader.comic.page', 1) }}">Lihat Semua</a>
             </div>
             <div class="listupd stsven">
                 @foreach ($comics as $comic)
@@ -43,20 +43,54 @@
                 @if ($isLastPage == false)
                     <div class="hpage">
                         @if ($page != 1)
-                            <a href="{{ route('reader.comic.page', $previousPage) }}" class="r"><i
-                                    class="fa fa-chevron-left" aria-hidden="true"></i> Kembali</a>
+                            @if($type == 'Manhwa')
+                                <a href="{{ route('reader.page.manhwa.pagination', $previousPage) }}" class="r">
+                                    <i class="fa fa-chevron-left" aria-hidden="true"></i> 
+                                    Kembali
+                                </a>
+                            @elseif($type == 'Manga')
+                                <a href="{{ route('reader.page.manga.pagination', $previousPage) }}" class="r">
+                                    <i class="fa fa-chevron-left" aria-hidden="true"></i> 
+                                    Kembali
+                                </a>
+                            @else
+
+                            @endif
                         @endif
-                        <a href="{{ route('reader.comic.page', $nextPage) }}" class="r">Lanjut <i
-                                class="fa fa-chevron-right" aria-hidden="true"></i></a>
+                        @if($type == 'Manhwa')
+                            <a href="{{ route('reader.page.manhwa.pagination', $nextPage) }}" class="r">
+                                Lanjut 
+                                <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                            </a>
+                        @elseif($type == 'Manga')
+                            <a href="{{ route('reader.page.manga.pagination', $nextPage) }}" class="r">
+                                Lanjut 
+                                <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                            </a>
+                        @else
+
+                        @endif
+                       
                     </div>
                 @else
                     <div class="hpage">
                         @if ($page != 1)
-                            <a href="{{ route('reader.comic.page', $previousPage) }}" class="r"><i
-                                    class="fa fa-chevron-left" aria-hidden="true"></i> Kembali</a>
+                            @if($type == 'Manhwa')
+                                <a href="{{ route('reader.page.manhwa.pagination', $previousPage) }}" class="r">
+                                    <i class="fa fa-chevron-left" aria-hidden="true"></i> 
+                                    Kembali
+                                </a>
+                            @elseif($type == 'Manga')
+                                <a href="{{ route('reader.page.manga.pagination', $previousPage) }}" class="r">
+                                    <i class="fa fa-chevron-left" aria-hidden="true"></i> 
+                                    Kembali
+                                </a>
+                            @else
+
+                            @endif
+                            
                         @else
-                            <a href="/" class="r">Halaman
-                                Utama</a>
+                            <a href="/" class="r">Halaman Utama</a>
                         @endif
                     </div>
                 @endif

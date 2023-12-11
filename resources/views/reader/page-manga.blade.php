@@ -3,7 +3,7 @@
     <div class="postbody">
         <div class="bixbox">
             <div class="releases">
-                <h2>Terakhir Update</h2><a class="vl" href="{{ route('reader.comic.page', 1) }}">Lihat Semua</a>
+                <h2>Terakhir Update Komik</h2><a class="vl" href="{{ route('reader.comic.page', 1) }}">Lihat Semua</a>
             </div>
             <div class="listupd stsven">
                 @foreach ($comics as $comic)
@@ -40,24 +40,10 @@
                         </div>
                     </div>
                 @endforeach
-                @if ($isLastPage == false)
+                @if ($totalComics > 20)
                     <div class="hpage">
-                        @if ($page != 1)
-                            <a href="{{ route('reader.comic.page', $previousPage) }}" class="r"><i
-                                    class="fa fa-chevron-left" aria-hidden="true"></i> Kembali</a>
-                        @endif
-                        <a href="{{ route('reader.comic.page', $nextPage) }}" class="r">Lanjut <i
+                        <a href="{{ route('reader.comic.page', 1) }}" class="r">Lanjut <i
                                 class="fa fa-chevron-right" aria-hidden="true"></i></a>
-                    </div>
-                @else
-                    <div class="hpage">
-                        @if ($page != 1)
-                            <a href="{{ route('reader.comic.page', $previousPage) }}" class="r"><i
-                                    class="fa fa-chevron-left" aria-hidden="true"></i> Kembali</a>
-                        @else
-                            <a href="/" class="r">Halaman
-                                Utama</a>
-                        @endif
                     </div>
                 @endif
             </div>

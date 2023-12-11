@@ -14,12 +14,12 @@ return new class extends Migration
         Schema::create('comic_views', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('comic_id');
-            $table->string('viewer_ip');
+            $table->string('browser_id');
             $table->timestamps();
 
             $table->foreign('comic_id')->references('id')->on('comics')->onDelete('cascade');
             // Jika Anda ingin mencegah IP yang sama melihat komik yang sama
-            $table->unique(['comic_id', 'viewer_ip']);
+            $table->unique(['comic_id', 'browser_id']);
         });
     }
 

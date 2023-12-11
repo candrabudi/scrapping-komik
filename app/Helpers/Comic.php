@@ -145,3 +145,14 @@ function getComicRecommendations()
     //     return Session::get('comic_recommendations', []);
     // }
 }
+
+function RelatedComic($id)
+{
+    $comic = Comic::with('genres')->find($id);
+    $relatedComics = $comic->genres()->first()->comics()
+        ->where('comics.id', '!=', $comic->id)
+        ->take(5)
+        ->get();
+
+    return $relatedComics;
+}
